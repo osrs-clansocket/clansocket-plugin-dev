@@ -1,0 +1,46 @@
+# Per-method signature dup exclusions.
+#
+# Each entry suppresses the named method from the signature-shape index in
+# SignatureShapeScanner. A signature dup group with every member excluded does
+# not appear in the report. Partial exclusion (some members listed, others
+# absent) still reports the residual cross-class collision.
+#
+# Format (tab-separated):
+#   <package.Class#method(paramTypes)>\t<reason>
+#
+# Param types use source-form strings, comma-separated, no spaces
+# (e.g. "int", "String", "PresetSchema"). Match exactly what
+# SignatureShapeScanner.shapeKey produces.
+#
+# Blank lines and lines starting with '#' are ignored.
+#
+# Each exclusion is a deliberate decision that the shape collision is intrinsic
+# (popular signatures collide naturally) and not a refactoring opportunity.
+# Adding an entry without a reason is not allowed — every line carries WHY.
+
+# ─── group 1: String(int) in tracking/inventory ───
+com.clansocket.tracking.inventory.ContainerTracker#enabledLabel(int)	id→container-label gating against compile-time map; config-gated. distinct from cached live-fetch in ItemNames#resolve. shared abstraction would force one side to lose semantic checks or smuggle Object dependencies.
+com.clansocket.tracking.inventory.ItemNames#resolve(int)	id→item-name cached live-fetch from runelite ItemManager. collides only by shape with ContainerTracker#enabledLabel; different data source, different side effects.
+
+# ─── group 2: boolean(String) in tracking/social ───
+com.clansocket.tracking.social.BroadcastCategorizer#shouldSkip(String)	predicate: does broadcast text contain any of N skip fragments. iterates a constant list. unrelated to tag-stripping predicate elsewhere.
+com.clansocket.tracking.social.ChatTextSanitizer#isStrippableTag(String)	predicate: is this <...> inner-text an img/col tag. starts-with checks on three constants. unrelated to broadcast-skip predicate.
+
+# ─── group 3: String() in tracking/identity ───
+com.clansocket.tracking.identity.AccountTypeResolver#resolve()	reads IRONMAN varbit, indexes into a name array. distinct from clan name lookup; different runelite api surface, different error strategy.
+com.clansocket.tracking.identity.ClanResolver#currentClanName()	reads ClanChannel/ClanSettings via runelite api with defensive try/catch. distinct from account-type varbit lookup.
+
+# ─── group 5: String(String) in tracking/progression ───
+com.clansocket.tracking.progression.ClueCompletionParser#matchSuffix(String)	endsWith check against plural/singular clue suffixes; returns the matched suffix literal. parses broadcast text shape.
+com.clansocket.tracking.progression.ClueOpenedTracker#extractTier(String)	startsWith+substring against item-name clue prefixes; returns the tier substring between prefix and ')'. parses item-name shape. different input, different algorithm.
+
+# ─── group 6: String(String) in tracking/social ───
+com.clansocket.tracking.social.BroadcastCategorizer#categorize(String)	text→category-label map iteration; returns matched category or DEFAULT. unrelated to sanitization pipeline.
+com.clansocket.tracking.social.ChatTextSanitizer#sanitize(String)	char-by-char walk that strips img/col/nbsp tags; uses StringBuilder. wraps stripMetaPrefix then walks. distinct from broadcast categorization.
+com.clansocket.tracking.social.ChatTextSanitizer#stripMetaPrefix(String)	conditional prefix removal: strips "CA_ID:...|" if present. only callsite is sanitize(); split out to keep sanitize() under method-line cap.
+
+# ─── group 7: JPanel() in panel/sections ───
+com.clansocket.panel.sections.FooterPanel#buildLinks()	swing factory: vertical box of clickable URL labels. structurally unique.
+com.clansocket.panel.sections.HeaderPanel#buildTitleBlock()	swing factory: title + subtitle + clan-status stack with custom font. structurally unique.
+com.clansocket.panel.sections.TelemetrySection#newGrid()	swing factory: empty GridLayout JPanel with card spacing. structurally unique.
+com.clansocket.panel.sections.TelemetrySection#buildContent()	swing factory: stacked frequent+infrequent grids wrapped in BorderLayout.NORTH. structurally unique.

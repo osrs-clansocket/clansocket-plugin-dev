@@ -1,0 +1,21 @@
+.gradle
+build
+.idea/
+.project
+.settings/
+.classpath
+nbactions.xml
+nb-configuration.xml
+nbproject/
+
+# Spotless diagnostic output
+.spotless-*
+
+# Local dev reference — not distributed with the plugin
+/INSPIRATION.md
+/PATTERNS.md
+/task-list.txt
+*.zip
+/wiki
+/screenshots
+/scripts

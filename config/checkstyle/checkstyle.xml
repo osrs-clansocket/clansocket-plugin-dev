@@ -1,0 +1,251 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+		"-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+		"https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+	Mirrors eslint.discord.config.js / eslint.dashboard.config.js strictness.
+	Every violation is severity=error. Build fails on any warning.
+-->
+<module name="Checker">
+	<property name="severity" value="error"/>
+	<property name="charset" value="UTF-8"/>
+	<property name="fileExtensions" value="java"/>
+
+	<!-- File-scoped checks -->
+	<module name="FileLength">
+		<property name="max" value="150"/>
+		<property name="fileExtensions" value="java"/>
+	</module>
+	<module name="NewlineAtEndOfFile">
+		<property name="lineSeparator" value="lf"/>
+	</module>
+	<module name="RegexpSingleline">
+		<property name="format" value="\s+$"/>
+		<property name="message" value="Trailing whitespace"/>
+	</module>
+	<module name="RegexpMultiline">
+		<property name="format" value="\n{3,}"/>
+		<property name="message" value="More than one consecutive blank line"/>
+	</module>
+
+	<!-- ── Adopted from RuneLite upstream checkstyle (config/checkstyle/checkstyle.xml) ──
+		 Rules where upstream is stricter than our previous baseline. -->
+	<module name="RegexpMultiline">
+		<property name="format" value="else[ \t]*[\r\n]+[ \t]*if"/>
+		<property name="message" value="Newline should not be between else and if"/>
+	</module>
+
+	<!-- Logger enforcement: no raw stdout / stderr / stack dumps -->
+	<module name="RegexpSingleline">
+		<property name="format" value="System\.(out|err)\.(print|println|printf|write)"/>
+		<property name="message" value="Use logger (@Slf4j / log.info etc), not System.out/err"/>
+	</module>
+	<module name="RegexpSingleline">
+		<property name="format" value="\.printStackTrace\s*\("/>
+		<property name="message" value="Use logger.error(msg, throwable), not Throwable.printStackTrace()"/>
+	</module>
+
+	<!-- ── no-comments (mirrors lvi/no-comments — zero tolerance) ──
+		 Suppress narrowly via @SuppressWarnings("checkstyle:Regexp") on the
+		 declaration. The SuppressWarningsHolder+Filter pair below honours it.
+		 The (?<![:/]) look-behind excludes URL slashes like https:// and file:///. -->
+	<module name="RegexpSingleline">
+		<property name="format" value="(?&lt;![:/])//"/>
+		<property name="message" value="Line comment forbidden. Code is self-documenting or it isn't code. Rename / restructure instead; suppress narrowly via @SuppressWarnings(&quot;checkstyle:Regexp&quot;) only when WHY is non-obvious."/>
+	</module>
+	<module name="RegexpMultiline">
+		<property name="format" value="(?&lt;!\A)/\*"/>
+		<property name="message" value="Block or Javadoc comment forbidden mid-file. The only allowed /* */ is the file-leading BSD copyright header at byte 0 (managed by clansocket-licensing). Suppress narrowly via @SuppressWarnings(&quot;checkstyle:Regexp&quot;) only when WHY is non-obvious."/>
+	</module>
+
+	<!-- ── Centralized constants (RuneLite plugin convention) ──
+		 `static final` class-level declarations must live in a holder file:
+		   - *Constants.java   (domain constants)
+		   - *Config.java      (@ConfigGroup interfaces — RuneLite's own pattern)
+		   - *Ids.java         (widget / varbit / NPC ID collections)
+		   - Messages.java / *Messages.java  (string message tables)
+		   - *Budgets.java     (performance threshold tables — observation layer)
+		 Matches `static final` and `final static` in any visibility modifier.
+		 Suppressed only on allowlisted filenames via SuppressionSingleFilter below.
+		 Narrow exceptions (e.g. a hand-rolled Logger in a non-Lombok file) use
+		 @SuppressWarnings("checkstyle:StaticFinalOutsideConstants"). -->
+	<module name="RegexpSingleline">
+		<property name="id" value="StaticFinalOutsideConstants"/>
+		<property name="format" value="(\b(public|private|protected)\s+)?(static\s+final|final\s+static)\b(?!\s+(class|interface|enum|record)\b)"/>
+		<property name="message" value="static final field declarations must live in a *Constants.java / *Config.java / *Ids.java / *Messages.java / *Budgets.java holder (RuneLite plugin convention). Move the constant, or suppress narrowly via @SuppressWarnings(&quot;checkstyle:StaticFinalOutsideConstants&quot;). (Nested static final class/interface/enum/record declarations are exempt — those modifiers are inheritance/scope markers, not constant declarations.)"/>
+	</module>
+
+	<!-- Exempt the holder files from the StaticFinalOutsideConstants check -->
+	<module name="SuppressionSingleFilter">
+		<property name="files" value=".*[/\\]([A-Za-z0-9]+Constants|[A-Za-z0-9]*Config|[A-Za-z0-9]+Ids|[A-Za-z0-9]*Messages|[A-Za-z0-9]*Budgets)\.java$"/>
+		<property name="id" value="StaticFinalOutsideConstants"/>
+	</module>
+
+	<!-- Exempt *Config.java from FileLength: @ConfigItem boilerplate is RuneLite-imposed, single @ConfigGroup per plugin = single file -->
+	<module name="SuppressionSingleFilter">
+		<property name="files" value=".*[/\\][A-Za-z0-9]*Config\.java$"/>
+		<property name="checks" value="FileLength"/>
+	</module>
+
+	<module name="TreeWalker">
+		<!-- ── Adopted from RuneLite upstream checkstyle ──
+			 Whitespace rules that upstream enforces and we previously did not.
+			 LeftCurly=nl / RightCurly=alone / `^\t* ` tab-indent regex were considered but not
+			 adopted: they require Eclipse-formatter retuning beyond what's worth maintaining for a
+			 project that already uses Allman braces in practice via Spotless. -->
+		<module name="WhitespaceAround"/>
+		<module name="WhitespaceAfter">
+			<property name="tokens" value="COMMA"/>
+		</module>
+
+		<!-- ── Sizing (max-lines-per-function, max-params, max-depth) ── -->
+		<module name="MethodLength">
+			<property name="max" value="25"/>
+			<property name="countEmpty" value="false"/>
+			<property name="tokens" value="METHOD_DEF, CTOR_DEF, COMPACT_CTOR_DEF"/>
+		</module>
+		<module name="ParameterNumber">
+			<property name="max" value="4"/>
+			<property name="ignoreOverriddenMethods" value="true"/>
+		</module>
+		<module name="NestedIfDepth">
+			<property name="max" value="3"/>
+		</module>
+		<module name="NestedForDepth">
+			<property name="max" value="3"/>
+		</module>
+		<module name="NestedTryDepth">
+			<property name="max" value="3"/>
+		</module>
+		<module name="CyclomaticComplexity">
+			<property name="max" value="10"/>
+		</module>
+		<module name="OuterTypeNumber">
+			<property name="max" value="1"/>
+		</module>
+		<module name="AnonInnerLength">
+			<property name="max" value="25"/>
+		</module>
+
+		<!-- ── Imports (matches no-duplicate-imports, unused-imports) ── -->
+		<module name="AvoidStarImport"/>
+		<module name="UnusedImports"/>
+		<module name="RedundantImport"/>
+		<module name="ImportOrder">
+			<property name="groups" value="java,javax,net,org,com"/>
+			<property name="separated" value="true"/>
+			<property name="ordered" value="true"/>
+			<property name="option" value="top"/>
+		</module>
+
+		<!-- ── Naming (matches naming-conventions rule) ── -->
+		<module name="PackageName">
+			<property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
+		</module>
+		<module name="TypeName">
+			<property name="format" value="^[A-Z][a-zA-Z0-9]*$"/>
+		</module>
+		<module name="MethodName">
+			<property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+		</module>
+		<module name="LocalVariableName">
+			<property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+		</module>
+		<module name="MemberName">
+			<property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+		</module>
+		<module name="ParameterName">
+			<property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+		</module>
+		<module name="StaticVariableName">
+			<property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+		</module>
+		<module name="ConstantName">
+			<property name="format" value="^[A-Z][A-Z0-9_]*$"/>
+		</module>
+		<module name="ClassTypeParameterName">
+			<property name="format" value="^[A-Z][0-9]?$"/>
+		</module>
+		<module name="MethodTypeParameterName">
+			<property name="format" value="^[A-Z][0-9]?$"/>
+		</module>
+
+		<!-- ── Shadowing (no-shadow) ── -->
+		<module name="HiddenField">
+			<property name="ignoreConstructorParameter" value="true"/>
+			<property name="ignoreSetter" value="true"/>
+		</module>
+
+		<!-- ── Magic numbers (ignore [-1, 0, 1, 2]) ── -->
+		<module name="MagicNumber">
+			<property name="ignoreNumbers" value="-1, 0, 1, 2"/>
+			<property name="ignoreHashCodeMethod" value="true"/>
+			<property name="ignoreAnnotation" value="true"/>
+			<property name="ignoreFieldDeclaration" value="true"/>
+			<property name="ignoreAnnotationElementDefaults" value="true"/>
+		</module>
+
+		<!-- ── Warning comments (no-warning-comments) ── -->
+		<module name="TodoComment">
+			<property name="format" value="(?i)\b(todo|fixme|hack|workaround|stopship|xxx)\b"/>
+		</module>
+
+		<!-- ── Coding best practices ── -->
+		<module name="EmptyBlock">
+			<property name="option" value="text"/>
+			<property name="tokens" value="LITERAL_CATCH, LITERAL_DO, LITERAL_ELSE, LITERAL_FINALLY, LITERAL_IF, LITERAL_FOR, LITERAL_TRY, LITERAL_WHILE, INSTANCE_INIT, STATIC_INIT, LITERAL_SWITCH, LITERAL_SYNCHRONIZED"/>
+		</module>
+		<module name="EmptyCatchBlock">
+			<property name="exceptionVariableName" value="ignored|expected"/>
+		</module>
+		<module name="EqualsAvoidNull"/>
+		<module name="EqualsHashCode"/>
+		<module name="DefaultComesLast"/>
+		<module name="FallThrough"/>
+		<module name="MissingSwitchDefault"/>
+		<module name="ModifiedControlVariable"/>
+		<module name="MultipleVariableDeclarations"/>
+		<module name="NoFinalizer"/>
+		<module name="OneStatementPerLine"/>
+		<module name="PackageDeclaration"/>
+		<module name="SimplifyBooleanExpression"/>
+		<module name="SimplifyBooleanReturn"/>
+		<module name="StringLiteralEquality"/>
+		<module name="UnnecessaryParentheses"/>
+		<module name="UnnecessarySemicolonAfterOuterTypeDeclaration"/>
+		<module name="UnnecessarySemicolonAfterTypeMemberDeclaration"/>
+		<module name="UnnecessarySemicolonInEnumeration"/>
+		<module name="UnnecessarySemicolonInTryWithResources"/>
+		<module name="UnusedLocalVariable"/>
+		<module name="IllegalCatch">
+			<property name="illegalClassNames" value="java.lang.Exception,java.lang.Throwable,java.lang.RuntimeException,java.lang.Error"/>
+		</module>
+		<module name="IllegalThrows"/>
+
+		<!-- ── Braces / blocks (curly) ── -->
+		<module name="NeedBraces"/>
+		<module name="AvoidNestedBlocks">
+			<property name="allowInSwitchCase" value="true"/>
+		</module>
+
+		<!-- ── Modifiers ── -->
+		<module name="RedundantModifier"/>
+		<module name="ModifierOrder"/>
+		<module name="MissingOverride"/>
+		<module name="FinalClass"/>
+		<module name="FinalLocalVariable">
+			<property name="tokens" value="VARIABLE_DEF, PARAMETER_DEF"/>
+		</module>
+
+		<!-- ── Misc ── -->
+		<module name="ArrayTypeStyle"/>
+		<module name="UpperEll"/>
+		<module name="CovariantEquals"/>
+		<module name="NoClone"/>
+
+		<!-- ── Suppression hooks for narrow, justified bypass ── -->
+		<module name="SuppressWarningsHolder"/>
+	</module>
+	<module name="SuppressWarningsFilter"/>
+</module>
