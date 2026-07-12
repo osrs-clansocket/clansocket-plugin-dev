@@ -24,6 +24,8 @@ public class IdentityTracker extends AbstractStateTracker
 
 	@Inject
 	private IdentityEmitter emitter;
+	@Inject
+	private ClanResolver clanResolver;
 
 	private final WarmupCounter warmup = new WarmupCounter(IdentityConstants.CLAN_SETTINGS_TICK_WAIT);
 	private final WarmupCounter reassert = new WarmupCounter(IdentityConstants.IDENTITY_REASSERT_TICKS);
@@ -99,7 +101,12 @@ public class IdentityTracker extends AbstractStateTracker
 		{
 			return;
 		}
-		sessionReminderSent = emitter.emit(local, sessionStartIso, sessionReminderSent);
+		final ClanInfo clan = clanResolver.resolve(local.getName());
+		if (clan.name == null)
+		{
+			return;
+		}
+		sessionReminderSent = emitter.emit(local, sessionStartIso, sessionReminderSent, clan);
 		phase = Phase.ACTIVE;
 		reassert.reset();
 	}
@@ -110,12 +117,18 @@ public class IdentityTracker extends AbstractStateTracker
 		{
 			return;
 		}
-		reassert.reset();
 		final Player local = client.getLocalPlayer();
-		if (local != null && local.getName() != null)
+		if (local == null || local.getName() == null)
 		{
-			sessionReminderSent = emitter.emit(local, sessionStartIso, sessionReminderSent);
+			return;
 		}
+		final ClanInfo clan = clanResolver.resolve(local.getName());
+		if (clan.name == null)
+		{
+			return;
+		}
+		reassert.reset();
+		sessionReminderSent = emitter.emit(local, sessionStartIso, sessionReminderSent, clan);
 	}
 
 	@Subscribe

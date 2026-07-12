@@ -35,18 +35,17 @@ final class IdentityEmitter
 	@Inject
 	private GameChatEmitter chatEmitter;
 	@Inject
-	private ClanResolver clanResolver;
-	@Inject
 	private WorldService worldService;
 
-	boolean emit(final Player local, final String sessionStartIso, final boolean sessionReminderSent)
+	boolean emit(final Player local, final String sessionStartIso, final boolean sessionReminderSent,
+	        final ClanInfo clan)
 	{
 		final long accountHashLong = client.getAccountHash();
 		if (accountHashLong == -1L)
 		{
 			return sessionReminderSent;
 		}
-		final Payload payload = buildIdentity(local, sessionStartIso, accountHashLong);
+		final Payload payload = buildIdentity(local, sessionStartIso, accountHashLong, clan);
 		batcher.enqueue(payload);
 		if (!sessionReminderSent)
 		{
@@ -57,13 +56,13 @@ final class IdentityEmitter
 		return sessionReminderSent;
 	}
 
-	private Payload buildIdentity(final Player local, final String sessionStartIso, final long accountHashLong)
+	private Payload buildIdentity(final Player local, final String sessionStartIso, final long accountHashLong,
+	        final ClanInfo clan)
 	{
 		final String rsn = local.getName();
 		final int world = client.getWorld();
 		final List<String> worldTypeNames = client.getWorldType().stream().map(WorldType::name)
 		        .collect(Collectors.toUnmodifiableList());
-		final ClanInfo clan = clanResolver.resolve(rsn);
 		final Payload payload = new Payload("identity", "rsn", rsn, "accountHash",
 		        Long.toUnsignedString(accountHashLong), "accountType", resolveAccountType(), "world", world,
 		        "worldTypes", worldTypeNames, "activity", resolveActivity(world), "clanName", clan.name, "clanRank",

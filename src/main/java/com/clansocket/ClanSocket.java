@@ -152,8 +152,13 @@ public class ClanSocket
 		openNow();
 	}
 
-	public synchronized void handleClose(final String reason)
+	public synchronized void handleClose(final WebSocket closed, final String reason)
 	{
+		if (closed != ws)
+		{
+			return;
+		}
+		sessions.clear();
 		ws = null;
 		drained = false;
 		if (!shouldBeConnected)

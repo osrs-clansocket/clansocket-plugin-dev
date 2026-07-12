@@ -134,15 +134,13 @@ public final class SocketCallback extends WebSocketListener
 	public void onClosed(final WebSocket webSocket, final int code, final String reason)
 	{
 		log.info("ClanSocket WS closed ({}) {}", code, reason);
-		sessions.clear();
-		socket.handleClose(Strings.isNotEmpty(reason) ? reason : "code " + code);
+		socket.handleClose(webSocket, Strings.isNotEmpty(reason) ? reason : "code " + code);
 	}
 
 	@Override
 	public void onFailure(final WebSocket webSocket, final Throwable t, final Response response)
 	{
 		log.warn("ClanSocket WS failure: {}", t.getMessage());
-		sessions.clear();
-		socket.handleClose(t.getMessage());
+		socket.handleClose(webSocket, t.getMessage());
 	}
 }
