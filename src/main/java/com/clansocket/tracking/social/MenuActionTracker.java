@@ -8,7 +8,6 @@ import javax.inject.Singleton;
 import net.runelite.api.MenuAction;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.gameval.InterfaceID;
-import net.runelite.api.widgets.WidgetUtil;
 import net.runelite.client.eventbus.Subscribe;
 
 import com.clansocket.ClanSocketConfig;
@@ -40,8 +39,7 @@ public class MenuActionTracker extends AbstractTracker
 		{
 			enqueue(event, action, event.getItemId(), SocialConstants.KIND_ITEM);
 		}
-		else if (action == MenuAction.CC_OP
-		        && WidgetUtil.componentToInterface(event.getParam1()) == InterfaceID.EMOTE)
+		else if (action == MenuAction.CC_OP && event.getParam1() == InterfaceID.Emote.CONTENTS)
 		{
 			enqueue(event, action, event.getParam0(), SocialConstants.KIND_EMOTE);
 		}

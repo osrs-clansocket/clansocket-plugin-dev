@@ -44,8 +44,7 @@ public final class LocationContext
 		final LocalPoint lp = wv == null ? null : vesselPoint(wv, local);
 		if (lp != null)
 		{
-			return wv.isInstance() ? WorldPoint.fromLocalInstance(client, lp)
-			        : WorldPoint.fromLocal(wv, lp.getX(), lp.getY(), wv.getPlane());
+			return WorldPoint.fromLocalInstance(wv.getScene(), lp, wv.getPlane());
 		}
 		if (wv != null && wv.isInstance())
 		{
