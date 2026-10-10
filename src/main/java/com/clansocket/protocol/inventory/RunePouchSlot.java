@@ -9,5 +9,5 @@ public final class RunePouchSlot
 	public final int itemId;
 	public final int qty;
 	public final String name;
-	public final int price;
+	public final long price;
 }

@@ -5,19 +5,15 @@ import javax.inject.Singleton;
 
 import net.runelite.client.game.ItemManager;
 
-import com.clansocket.bus.primitive.IntIntMap;
 import com.clansocket.bus.primitive.IntObjectMap;
 
 @Singleton
 @SuppressWarnings("checkstyle:IllegalCatch")
 public final class ItemNames
 {
-	@SuppressWarnings("checkstyle:StaticFinalOutsideConstants")
-	private static final int PRICE_MISS = Integer.MIN_VALUE;
-
 	private final ItemManager itemManager;
 	private final IntObjectMap<String> nameCache = new IntObjectMap<>();
-	private final IntIntMap priceCache = new IntIntMap(16, PRICE_MISS);
+	private final IntObjectMap<Long> priceCache = new IntObjectMap<>(16);
 
 	@Inject
 	public ItemNames(final ItemManager itemManager) {
@@ -39,16 +35,16 @@ public final class ItemNames
 		return name;
 	}
 
-	public int resolvePrice(final int itemId)
+	public long resolvePrice(final int itemId)
 	{
-		int cached = priceCache.get(itemId);
-		if (cached != PRICE_MISS)
+		final Long cached = priceCache.get(itemId);
+		if (cached != null)
 		{
 			return cached;
 		}
-		cached = fetchPrice(itemId);
-		priceCache.put(itemId, cached);
-		return cached;
+		final long fetched = fetchPrice(itemId);
+		priceCache.put(itemId, fetched);
+		return fetched;
 	}
 
 	public boolean isPlaceholder(final int itemId)
@@ -79,7 +75,7 @@ public final class ItemNames
 		}
 	}
 
-	private int fetchPrice(final int itemId)
+	private long fetchPrice(final int itemId)
 	{
 		try
 		{

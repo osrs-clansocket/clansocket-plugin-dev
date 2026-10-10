@@ -8,5 +8,5 @@ public final class ItemChange
 	public final int id;
 	public final int qty;
 	public final String name;
-	public final int price;
+	public final long price;
 }

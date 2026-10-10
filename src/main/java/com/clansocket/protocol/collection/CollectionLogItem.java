@@ -8,6 +8,6 @@ public final class CollectionLogItem
 	public final int itemId;
 	public final int quantity;
 	public final String name;
-	public final int price;
+	public final long price;
 	public final String category;
 }
