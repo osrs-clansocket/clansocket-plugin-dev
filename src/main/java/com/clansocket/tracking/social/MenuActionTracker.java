@@ -7,6 +7,8 @@ import javax.inject.Singleton;
 
 import net.runelite.api.MenuAction;
 import net.runelite.api.events.MenuOptionClicked;
+import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.widgets.WidgetUtil;
 import net.runelite.client.eventbus.Subscribe;
 
 import com.clansocket.ClanSocketConfig;
@@ -30,13 +32,25 @@ public class MenuActionTracker extends AbstractTracker
 			return;
 		}
 		final MenuAction action = event.getMenuAction();
-		if (!SocialConstants.TRACKED_MENU_ACTIONS.contains(action))
+		if (SocialConstants.TRACKED_MENU_ACTIONS.contains(action))
 		{
-			return;
+			enqueue(event, action, event.getId(), targetKind(action.name()));
 		}
+		else if (event.isItemOp())
+		{
+			enqueue(event, action, event.getItemId(), SocialConstants.KIND_ITEM);
+		}
+		else if (action == MenuAction.CC_OP
+		        && WidgetUtil.componentToInterface(event.getParam1()) == InterfaceID.EMOTE)
+		{
+			enqueue(event, action, event.getParam0(), SocialConstants.KIND_EMOTE);
+		}
+	}
+
+	private void enqueue(final MenuOptionClicked event, final MenuAction action, final int id, final String kind)
+	{
 		batcher.enqueue(new Payload("menu_action", "action", action.name(), "option", event.getMenuOption(), "target",
-		        ChatTextSanitizer.sanitize(event.getMenuTarget()), "id", event.getId(), "targetKind",
-		        targetKind(action.name())));
+		        ChatTextSanitizer.sanitize(event.getMenuTarget()), "id", id, "targetKind", kind));
 	}
 
 	private static String targetKind(final String actionName)

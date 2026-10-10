@@ -161,7 +161,7 @@ public interface ClanSocketConfig extends Config
 		return true;
 	}
 
-	@ConfigItem(keyName = "streamMenuActions", name = "Menu actions", description = "Right-click options on objects/NPCs.", hidden = true)
+	@ConfigItem(keyName = "streamMenuActions", name = "Menu actions", description = "Options on objects, NPCs, items and emotes.", hidden = true)
 	default boolean streamMenuActions()
 	{
 		return true;

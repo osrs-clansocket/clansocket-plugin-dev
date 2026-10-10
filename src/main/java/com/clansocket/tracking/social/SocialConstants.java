@@ -50,6 +50,8 @@ final class SocialConstants
 	        MenuAction.NPC_FIFTH_OPTION);
 
 	static final Map<String, String> MENU_KIND_BY_PREFIX = Map.of("NPC_", "NPC", "GAME_OBJECT_", "GAME_OBJECT");
+	static final String KIND_ITEM = "ITEM";
+	static final String KIND_EMOTE = "EMOTE";
 
 	private SocialConstants() {
 	}

@@ -5,6 +5,7 @@ import javax.inject.Singleton;
 
 import net.runelite.api.Client;
 import net.runelite.api.Player;
+import net.runelite.api.WorldEntity;
 import net.runelite.api.WorldView;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
@@ -40,14 +41,32 @@ public final class LocationContext
 	public WorldPoint resolvePoint(final Player local)
 	{
 		final WorldView wv = client.getTopLevelWorldView();
+		final LocalPoint lp = wv == null ? null : vesselPoint(wv, local);
+		if (lp != null)
+		{
+			return wv.isInstance() ? WorldPoint.fromLocalInstance(client, lp)
+			        : WorldPoint.fromLocal(wv, lp.getX(), lp.getY(), wv.getPlane());
+		}
 		if (wv != null && wv.isInstance())
 		{
-			final LocalPoint lp = local.getLocalLocation();
-			if (lp != null)
+			final LocalPoint own = local.getLocalLocation();
+			if (own != null)
 			{
-				return WorldPoint.fromLocalInstance(client, lp);
+				return WorldPoint.fromLocalInstance(client, own);
 			}
 		}
 		return local.getWorldLocation();
+	}
+
+	private static LocalPoint vesselPoint(final WorldView top, final Player local)
+	{
+		final WorldView own = local.getWorldView();
+		final LocalPoint lp = local.getLocalLocation();
+		if (own == null || own.isTopLevel() || lp == null)
+		{
+			return null;
+		}
+		final WorldEntity vessel = top.worldEntities().byIndex(own.getId());
+		return vessel == null ? null : vessel.transformToMainWorld(lp);
 	}
 }
