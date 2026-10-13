@@ -1,10 +1,9 @@
 # ClanSocket
-[![](https://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/rank/plugin/clansocket)](https://runelite.net/plugin-hub/show/clansocket)
-[![](https://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/installs/plugin/clansocket)](https://runelite.net/plugin-hub/show/clansocket)
+[![Plugin Hub rank](https://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/rank/plugin/clansocket)](https://runelite.net/plugin-hub/show/clansocket) [![Plugin Hub installs](https://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/installs/plugin/clansocket)](https://runelite.net/plugin-hub/show/clansocket)
 
-Streams real-time OSRS clan and gameplay telemetry over a single WebSocket to a clan dashboard at [clansocket.com](https://clansocket.com). Live world map, member roster, per-stream privacy gates, GDPR-grade data rights.
+Sends your own Old School RuneScape clan and gameplay events over a single WebSocket to the ClanSocket relay at [clansocket.com](https://clansocket.com). The relay passes them on, live, to the sites and services your clan's Owner or Deputy Owner has approved, and stores none of them. Every stream has its own switch in the side panel.
 
-The plugin targets whichever in-game clan you are currently a member of. Telemetry only reaches a dashboard if your clan has been claimed there; for unclaimed clans the server drops events silently.
+The plugin follows the in-game clan you are a member of. Your events reach a site only after your clan approved it with an in-game prompt. Until then the relay drops them.
 
 ---
 
@@ -14,7 +13,7 @@ GitHub repository: [`osrs-clansocket/clansocket-plugin-dev`](https://github.com/
 
 It is a standalone Git repository that checks out as a flat sibling under the `clansocket-workspace` umbrella. Unlike the Node packages, it builds with Gradle and is not driven by the workspace-root `npm` orchestrator.
 
-The plugin is the data producer for the ClanSocket system. It connects to one endpoint — `wss://ws.clansocket.com/data` (the constant `SERVER_URL` in `src/main/java/com/clansocket/ClanSocketConstants.java`) — and the server resolves the clan tenant from the in-game clan name in the identity frame. Telemetry and clan chat ride the same connection. The companion server, dashboard, and Discord bot live in the sibling `clansocket-app` repository (`clansocket-app-dev`).
+The plugin is the data producer for the ClanSocket system. It connects to one endpoint — `wss://ws.clansocket.com/data` (the constant `SERVER_URL` in `src/main/java/com/clansocket/ClanSocketConstants.java`) — and the relay resolves the clan from the in-game clan name in the identity event. Telemetry and clan chat ride the same connection. The relay passes each clan's events to the services the clan approved; its wire contract and API reference are at [clansocket.com](https://clansocket.com/#api).
 
 ---
 
@@ -24,7 +23,7 @@ The plugin is the data producer for the ClanSocket system. It connects to one en
 2. Enable the plugin.
 3. Log into RuneScape on a character that is a member of your clan.
 
-If your clan is not yet claimed, ask your Owner or Deputy Owner to claim it from clansocket.com — see the [Claim your clan](https://github.com/osrs-clansocket/clansocket-plugin/wiki/Claim-Your-Clan) wiki page for the full walkthrough.
+A site that uses ClanSocket asks your clan for access through a prompt in the side panel, and your Owner or Deputy Owner confirms it there. See the [Claim your clan](https://github.com/osrs-clansocket/clansocket-plugin/wiki/Claim-Your-Clan) wiki page. The sites built on the relay are listed at [clansocket.com](https://clansocket.com/#consumers).
 
 ---
 
@@ -34,12 +33,12 @@ The plugin adds a side panel to the RuneLite right-rail. The panel is the primar
 
 ![panel](https://github.com/osrs-clansocket/clansocket-plugin/wiki/screenshots/plugin-active.png)
 
-- **Header** — connection state (Online / Offline / Reconnect), clan status (`clan: name` green when registered, `(unclaimed)` orange if not), and a reset button for the per-account event counters.
+- **Header**: connection state (Online, Offline, Reconnect), your clan, and a reset button for the per-account event counters.
 - **Presets** — Manual or Clan mode toggle, plus 7 save slots.
 - **Telemetry cards** — 24 cards, one per data stream. Click to toggle off; click again to re-enable. Frequent streams render a 60-second sparkline; infrequent streams show a `Last: Nm ago` indicator.
 - **Footer** — links to clansocket.com and the GitHub repo.
 
-When the dashboard sends a consent request, a green-pulsing banner appears above the cards with confirm + reject buttons and a countdown.
+When a site asks your clan for access, or asks to verify your name, a green-pulsing banner appears above the cards with confirm and reject buttons and a countdown. A rejected or unanswered request gives nothing away.
 
 ![consent banner](https://github.com/osrs-clansocket/clansocket-plugin/wiki/screenshots/ingame-panel-notif-clan-claim.png)
 
@@ -51,7 +50,7 @@ When the dashboard sends a consent request, a green-pulsing banner appears above
 
 | Setting | Effect |
 | --- | --- |
-| WebSocket URL | `wss://` URL of your clan's dashboard endpoint. Blank uses clansocket.com. A bare host (no scheme) is auto-prefixed with `wss://`. |
+| WebSocket URL | The relay's address. Blank uses `wss://ws.clansocket.com/data`. A bare host (no scheme) is prefixed with `wss://`. |
 
 All other settings live in the side panel.
 
@@ -61,7 +60,23 @@ All other settings live in the side panel.
 
 When the plugin is enabled and you are logged in to a clan-member character, events flow over a single WebSocket connection as per-tick batches.
 
-**Game telemetry (your character only).** Identity (RSN, account hash, account type, world, world types, current activity, clan name + rank + join date + member counts, session start); clan roster snapshots; skills snapshot + XP gains + level-ups; combat (hitsplats dealt and taken, current target); player deaths; slayer state; vitals (run energy, weight, special attack); active prayers; stat boosts; status effects (poison, venom, disease, cold); location (x, y, plane, region, area); inventory + equipment + seed vault (baseline snapshot per session, then per-change deltas); bank open/close snapshots; rune pouch slot contents; loot drops; pet drops; quest snapshots and completions; diary snapshots and completions; clue scroll opens and completions; collection log per-item notifications and full snapshots; combat achievement catalog and per-task completions; farming patch changes; menu actions on game objects and NPCs.
+**Game telemetry, your character only:**
+
+- Identity: RSN, account hash, account type, world, world types, current activity, clan name, rank, join date, member counts and session start.
+- Clan roster and rank title snapshots.
+- Skills snapshot, XP gains and level-ups.
+- Combat: hitsplats dealt and taken, and the current target.
+- Deaths and slayer state.
+- Vitals: hitpoints, prayer, run energy, weight and special attack.
+- Active prayers, stat boosts, and poison and venom.
+- Location (x, y, plane, region, area) and world hops.
+- Inventory, equipment and seed vault: a snapshot per session, then each change.
+- Bank open and close snapshots, and rune pouch slots.
+- Loot and pet drops.
+- Quests, diaries, clue scrolls, the collection log and combat achievements: snapshots and completions.
+- Farming patch changes, and menu actions on objects, NPCs, items and emotes.
+
+The full list with each event's fields is at [clansocket.com](https://clansocket.com/#plugin).
 
 **Clan chat.** Every message and Jagex-generated broadcast visible in the configured clan channel — same pattern as the long-running [clan-chat-webhook](https://github.com/pascalla/clan-chat-webhook) plugin. Scoped strictly to your configured clan; never any other channel.
 
@@ -70,7 +85,7 @@ When the plugin is enabled and you are logged in to a clan-member character, eve
 - Public chat, private messages, friends-list chat, guest chat, or any clan channel other than the configured one.
 - Other players' character data (only their messages in your clan channel, and Jagex's broadcasts about them).
 - Any data when you are not logged in to RuneScape.
-- Any data when your in-game clan has not been claimed on the dashboard.
+- Anything to a site your clan has not approved. The relay drops events for a clan with no approved site.
 
 ---
 
@@ -80,11 +95,11 @@ Three layers of control:
 
 - **24 per-stream toggles** in the side panel — click any card to disable a stream.
 - **Explicit consent** dialogs on Location re-enable and on the Manual → Clan mode switch.
-- **Data rights** on clansocket.com — browse every stored row, export a GDPR-style portable zip, or remove all data tied to your account.
+- **No storage at the relay.** The relay passes events through memory and keeps none of them. A site your clan approved holds what it received, under its own privacy policy: ask that site to see, export or delete your data.
 
-Location streams real-time coordinates (x, y, plane, region, area) to your clan dashboard while you are logged in, visible to clan members only. The explicit YES/NO consent dialog fires when you toggle Location from OFF back to ON, so you see it any time you re-enable after disabling. On a fresh install no dialog appears; Location streams from the moment you log in. To gate this before any coordinates leave your client, toggle Location off from the panel right after install and re-enable when you are ready.
+Location streams your real-time position (x, y, plane, region, area) to the sites your clan approved while you are logged in. The explicit YES/NO consent dialog fires when you toggle Location from OFF back to ON, so you see it any time you re-enable after disabling. On a fresh install no dialog appears; Location streams from the moment you log in. To gate this before any coordinates leave your client, toggle Location off from the panel right after install and re-enable when you are ready.
 
-For the full privacy model and the data-rights surface, see [Privacy overview](https://github.com/osrs-clansocket/clansocket-plugin/wiki/Privacy-Overview) and [Data rights](https://github.com/osrs-clansocket/clansocket-plugin/wiki/Data-Rights) in the wiki.
+For the full privacy model, see [Privacy overview](https://github.com/osrs-clansocket/clansocket-plugin/wiki/Privacy-Overview) and [Data rights](https://github.com/osrs-clansocket/clansocket-plugin/wiki/Data-Rights) in the wiki, and the relay's policy at [clansocket.com](https://clansocket.com/#privacy).
 
 ---
 
@@ -108,7 +123,7 @@ The Gradle tasks defined in `build.gradle`:
 | `./gradlew test` | Runs the JUnit test suite. |
 | `./gradlew shadowJar` | Builds a multi-release fat jar (`clansocket-<version>-all.jar`) from main + test output and the test runtime classpath. |
 
-The plugin entry class is `com.clansocket.ClanSocketPlugin` (declared in `runelite-plugin.properties` and annotated `@PluginDescriptor(name = "ClanSocket")`). The JVM that runs the plugin client must trust the dev server's mkcert root CA — the sibling `clansocket-app` repository provides `npm run trust:jvm` for this.
+The plugin entry class is `com.clansocket.ClanSocketPlugin` (declared in `runelite-plugin.properties` and annotated `@PluginDescriptor(name = "ClanSocket")`). To run the plugin against a relay on your own machine, see [Local development](https://github.com/osrs-clansocket/clansocket-plugin/wiki/Local-Development).
 
 ---
 
@@ -146,8 +161,8 @@ clansocket-plugin/
 ## Architecture & Key Concepts
 
 - **Trackers.** Each game domain has a tracker under `tracking/` extending a base in `bus/` (`AbstractTracker`, `AbstractStateTracker`, `AbstractWarmupSnapshotTracker`). `CSTrackerRegistry` registers them centrally. Trackers subscribe to RuneLite events, gate on per-stream config, and enqueue payloads — they never block inside a `@Subscribe` handler.
-- **Protocol DTOs.** Every payload type is a DTO under `protocol/<domain>/`. These fields mirror the server's `client-telemetry.ts` types; drift between the two is a build-time error in the server-side schema-contract check. The batch envelope is `{ seq, tick, events: [...] }`; the server stamps `event_received_at` on ingest.
-- **Transport.** `transport/` opens and maintains the single WebSocket (`WsOpener`, `ReconnectScheduler`, `SessionStore`). There is exactly one endpoint — never per-tenant ingest URLs. `consent/` handles dashboard-initiated consent requests.
+- **Protocol DTOs.** Every nested payload type is a DTO under `protocol/<domain>/`. The relay reads the plugin's frames and events from this repository and checks its own wire contract against them; a change here that the relay does not know fails the relay's build. The batch envelope is `{ seq, tick, events: [...] }`.
+- **Transport.** `transport/` opens and maintains the single WebSocket (`WsOpener`, `ReconnectScheduler`, `SessionStore`) to one endpoint for every clan. `consent/` handles the claim and name-verify requests the relay forwards from approved services.
 - **Panel.** `panel/` builds the side panel from RuneLite's bundled Swing components. `PluginPanel` subclasses are injected via `Provider.get()` inside `startUp()`, never constructor-injected.
 - **Bus primitives.** `bus/primitive/` holds allocation-conscious primitives (`IntIntMap`, `IntObjectMap`, `WarmupCounter`, latched snapshot trackers) used on the hot per-tick path.
 
